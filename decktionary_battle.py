@@ -11,6 +11,14 @@ class DecktionaryBattle:
         random.shuffle(deck)
         return deck
     
+    def deal_cards(self):
+        self.player1_hand = [self.deck.pop() for _ in range(8)]
+        self.player2_hand = [self.deck.pop() for _ in range(8)]
+        print("Player 1 Hand:", self.player1_hand)
+        print("Player 2 Hand:", self.player2_hand)
+
+    
 
 game = DecktionaryBattle()
 print("Shuffled Deck: ", game.deck)
+game.deal_cards()
