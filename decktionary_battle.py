@@ -3,6 +3,7 @@ import random
 class DecktionaryBattle:
     def __init__(self):
         self.deck = self.create_deck()
+        self.revealed_cards = []
 
     def create_deck(self):
         suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
@@ -22,18 +23,26 @@ class DecktionaryBattle:
         print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
         print(f"Lead suit: {lead_suit}")
        
-        if player2_card[1] == lead_suit:
-            winner = 1 if player1_card[0] > player2_card[0] else 2
-            print(f"Both players followed the suit. Winner: Player {winner}")
-        
-        else:
+        if player2_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player2_hand):
+            print("Player 2 broke the rules by not following suit!")
             winner = 1
-            print(f"Player 2 did not follow suit. Winner: Player 1")
+            
+        else:   
+            
+            if player2_card[1] == lead_suit:
+                winner = 1 if player1_card[0] > player2_card[0] else 2
+                print(f"Both players followed the suit. Winner: Player {winner}")
+            else:
+                winner = 1
+                print(f"Player 2 did not follow suit. Winner: Player 1")
         
         if winner == 1:
             print("Player 1 wins this round!")
         else:
             print("Player 2 wins this round!")
+        
+        self.revealed_cards.append(self.deck.pop())
+        print("Revealed Card:", self.revealed_cards[-1])
     
 
 game = DecktionaryBattle()
