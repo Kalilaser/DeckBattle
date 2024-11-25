@@ -17,8 +17,25 @@ class DecktionaryBattle:
         print("Player 1 Hand:", self.player1_hand)
         print("Player 2 Hand:", self.player2_hand)
 
+    def lead_round(self, player1_card, player2_card):
+        lead_suit = player1_card[1]
+        print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
+        print(f"Lead suit: {lead_suit}")
+       
+        if player2_card[1] == lead_suit:
+            winner = 1 if player1_card[0] > player2_card[0] else 2
+            print(f"Both players followed the suit. Winner: Player {winner}")
+        
+        else:
+            winner = 1
+            print(f"Player 2 did not follow suit. Winner: Player 1")
+        
+        if winner == 1:
+            print("Player 1 wins this round!")
+        else:
+            print("Player 2 wins this round!")
     
 
 game = DecktionaryBattle()
-print("Shuffled Deck: ", game.deck)
 game.deal_cards()
+game.lead_round(game.player1_hand[0], game.player2_hand[0])
