@@ -27,19 +27,24 @@ class DecktionaryBattle:
         else:
             player2_card = self.choose_card(self.player2_hand, 2)
             player1_card = self.choose_card(self.player1_hand, 1)
-
+        
+        # Determines the lead suit
         lead_suit = player1_card[1] if leader == 1 else player2_card[1]
         print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
         print(f"Lead suit: {lead_suit}")
-       
+        
+        # Initilization of the winner variable
+        winner = None
+
+        # Follow Suit Rule Check: Checks to see if anyone did not follow the suit
         if follower == 2 and player2_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player2_hand):
             print("Player 2 broke the rules by not following suit!")
             winner = 1 # Player 1 automatically wins
         elif follower == 1 and player1_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player1_hand):
-            print("Player 2 broke the rules by not following suit!")
+            print("Player 1 broke the rules by not following suit!")
             winner = 2 # Player 2 automatically wins
             
-        else:   
+        if winner is None:   
             # Determines the winner normally if no rules have been broken
             if (player2_card[1] == lead_suit and leader == 1) or (player1_card[1] == lead_suit and leader == 2):
                 winner = 1 if player1_card[0] > player2_card[0] else 2
@@ -48,6 +53,7 @@ class DecktionaryBattle:
                 winner = leader
                 print(f"Player {follower} did not follow suit. Winner: {leader}")
         
+        # Updates the scores
         if winner == 1:
             self.player1_score += 1
             print("Player 1 wins this round!")
@@ -55,6 +61,7 @@ class DecktionaryBattle:
             self.player2_score += 1
             print("Player 2 wins this round!")
         
+        # Reveals the next card from the deck
         self.revealed_cards.append(self.deck.pop())
         print("Revealed Card:", self.revealed_cards[-1])
         
