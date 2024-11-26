@@ -95,5 +95,4 @@ class DecktionaryBattle:
             print("The game is a tie!")
 
 game = DecktionaryBattle()
-game.deal_cards()
 game.play_game()
