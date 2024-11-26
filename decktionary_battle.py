@@ -29,25 +29,24 @@ class DecktionaryBattle:
             player1_card = self.choose_card(self.player1_hand, 1)
 
         lead_suit = player1_card[1] if leader == 1 else player2_card[1]
-
         print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
         print(f"Lead suit: {lead_suit}")
        
         if follower == 2 and player2_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player2_hand):
             print("Player 2 broke the rules by not following suit!")
-            winner = 1
+            winner = 1 # Player 1 automatically wins
         elif follower == 1 and player1_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player1_hand):
             print("Player 2 broke the rules by not following suit!")
-            winner = 2
+            winner = 2 # Player 2 automatically wins
             
         else:   
-            
-            if (player2_card[1] == lead_suit and leader == 1) or (player1_card[1] == lead_suit and leader == 2)
+            # Determines the winner normally if no rules have been broken
+            if (player2_card[1] == lead_suit and leader == 1) or (player1_card[1] == lead_suit and leader == 2):
                 winner = 1 if player1_card[0] > player2_card[0] else 2
                 print(f"Both players followed the suit. Winner: Player {winner}")
             else:
                 winner = leader
-                print(f"Player 2 did not follow suit. Winner: Player 1")
+                print(f"Player {follower} did not follow suit. Winner: {leader}")
         
         if winner == 1:
             self.player1_score += 1
@@ -58,6 +57,7 @@ class DecktionaryBattle:
         
         self.revealed_cards.append(self.deck.pop())
         print("Revealed Card:", self.revealed_cards[-1])
+        
         return winner
     
     def choose_card(self, player_hand, player_num):
@@ -74,10 +74,13 @@ class DecktionaryBattle:
 
     def play_game(self):
         self.deal_cards()
-        for _ in range(8):
-            player1_card = self.player1_hand.pop()
-            player2_card = self.player2_hand.pop()
-            self.lead_round(player1_card, player2_card)
+        # Player 1 leads the first round
+        leader = 1
+
+        for _ in range(8): # Play 8 rounds
+            print(f"Player {leader} is leading this round.")
+            leader = self.lead_round(leader, 2 if leader == 1 else 1)
+        
         print("Final Scores:")
         print("Player 1:", self.player1_score)
         print("Player 2:", self.player2_score)    
