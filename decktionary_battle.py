@@ -73,17 +73,26 @@ class DecktionaryBattle:
                 print("Invalid input. Please enter a number.")
 
     def play_game(self):
+        print("Welcome to Decktionary Battle!")
         self.deal_cards()
         # Player 1 leads the first round
         leader = 1
 
-        for _ in range(8): # Play 8 rounds
+        for round_num in range(1,9): # Play 8 rounds
+            print(f"\n--- Round {round_num} ---")
             print(f"Player {leader} is leading this round.")
             leader = self.lead_round(leader, 2 if leader == 1 else 1)
         
-        print("Final Scores:")
-        print("Player 1:", self.player1_score)
-        print("Player 2:", self.player2_score)    
+            print("\n--- Final Scores ---")
+            print("Player 1:", self.player1_score)
+            print("Player 2:", self.player2_score)    
+    
+        if self.player1_score > self.player2_score:
+            print("Player 1 wins the game!")
+        elif self.player2_score > self.player1_score:
+            print("Player 2 winds the game!")
+        else:
+            print("The game is a tie!")
 
 game = DecktionaryBattle()
 game.deal_cards()
