@@ -1,4 +1,5 @@
 import random
+import csv
 
 class DecktionaryBattle:
     def __init__(self):
@@ -7,6 +8,8 @@ class DecktionaryBattle:
         self.player1_score = 0
         self.player2_score = 0
         self.debug = False
+        self.game_log = []
+        self.game_number = 1
 
     def create_deck(self):
         suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
@@ -15,12 +18,59 @@ class DecktionaryBattle:
         random.shuffle(deck)
         return deck
     
+    def log_event(self, round_num, player1_card, player2_card, winner):
+        #Logs the details of the round to then be saved to a .csv file
+        self.game_log.append({
+            'Round': round_num,
+            'Player 1 Card': player1_card,
+            'Player 2 Card': player2_card,
+            'Winner': f"Player {winner}"
+        })
+
+    def save_log_to_csv(self, filename="game_log.csv"):
+        """Save the game log to a .csv file with game breaks."""
+        with open(filename, 'a', newline='') as csvfile:  # Open in append mode
+            fieldnames = ['Game', 'Round', 'Player 1 Hand', 'Player 2 Hand', 'Winner', 'Player 1 Score', 'Player 2 Score']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            # Writes the header only if the file is empty
+            if csvfile.tell() == 0:
+                writer.writeheader()
+
+            # Adds the game number to each log entry
+            for log in self.game_log:
+                log['Game'] = self.game_number 
+                writer.writerow(log)
+
+            # Adds a blank row to separate games
+            writer.writerow({})
+
+        self.game_number += 1
+
+    def log_final_scores(self):
+    # Logs the final scores and game summary.
+        self.game_log.append({
+            'Round': 'Final',
+            'Player 1 Hand': self.player1_hand,
+            'Player 2 Hand': self.player2_hand,
+            'Winner': 'Game Over',
+            'Player 1 Score': self.player1_score,
+            'Player 2 Score': self.player2_score
+    })
+
     def deal_cards(self):
         self.player1_hand = [self.deck.pop() for _ in range(8)]
         self.player2_hand = [self.deck.pop() for _ in range(8)]
         if self.debug:
             print("Player 1 Hand:", self.player1_hand)
             print("Player 2 Hand:", self.player2_hand)
+        
+        self.game_log.append({
+            'Round': 'Deal',
+            'Player 1 Hand': self.player1_hand,
+            'Player 2 Hand': self.player2_hand,
+            'Winner': 'N/A'
+        })
 
     def lead_round(self, leader, follower):
         if leader == 1:
@@ -152,13 +202,20 @@ class DecktionaryBattle:
                 print(f"\n--- Round {round_num} ---")
                 print(f"Player {leader} is leading this round.")
                 leader = self.lead_round(leader, 2 if leader == 1 else 1)
-
+        
+                # Logs the round        
+                self.log_event(round_num, self.player1_hand[-1], self.player2_hand[-1], leader)
+                
                 # Checks the game-ending criteria after each round
                 if self.check_game_end():
+                    self.log_final_scores()
+                    self.save_log_to_csv()
                     return
             
             if game_length == "short":
                 print("\n--- Short game completed ---")
+                self.log_final_scores()
+                self.save_log_to_csv()
                 break
 
             # Deals new cards
@@ -167,6 +224,8 @@ class DecktionaryBattle:
                 self.deal_cards()
             else:
                 print("\nNot enough cards to deal. Game over.")
+                self.log_final_scores()
+                self.save_log_to_csv()               
                 break
         
         self.print_final_scores()
