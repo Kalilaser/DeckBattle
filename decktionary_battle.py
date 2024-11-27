@@ -68,16 +68,32 @@ class DecktionaryBattle:
         return winner
     
     def choose_card(self, player_hand, player_num):
-        print(f"Player {player_num}'s turn. Your hand: {player_hand}")
+
+        # This allows players to choose a card from their hand with controls for privacy
+        hidden = True
         while True:
-            try:
-                choice = int(input(f"Player {player_num}, choose a card to play (0-{len(player_hand)-1}): "))
-                if 0 <= choice < len(player_hand):
-                    return player_hand.pop(choice)
+            if hidden:
+                print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
+            else:
+                print(f"Player {player_num}'s turn. Your hand:")
+                for idx, card in enumerate(player_hand):
+                    print(f"{idx}: {card}")
+        
+            choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
+
+            if choice in ['show', 's']:
+                hidden = False
+            elif choice in ['hide', 'h']:
+                hidden = True
+            elif choice.isdigit() and not hidden:
+                card_idx = int(choice)
+                if 0 <= card_idx < len(player_hand):
+                    return player_hand.pop(card_idx)
                 else:
-                    print("Invalid choice. Please try again.")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
+                    print("Invalid card index. Please try again.")
+            else:
+                print("Invalid input. Please try again.")
+
 
     def print_instructions(self):
     # This is to print the rules and instructions of the game.
@@ -142,7 +158,7 @@ class DecktionaryBattle:
             if game_length == "short":
                 print("\n--- Short game completed ---")
                 break
-            
+
             # Deals new cards
             if len(self.deck) >= 16:
                 print("\n--- Dealing New Cards ---")
