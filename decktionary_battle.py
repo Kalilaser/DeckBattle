@@ -28,21 +28,32 @@ class DecktionaryBattle:
         })
 
     def save_log_to_csv(self, filename="game_log.csv"):
-        """Save the game log to a .csv file with game breaks."""
         with open(filename, 'a', newline='') as csvfile:  # Open in append mode
-            fieldnames = ['Game', 'Round', 'Player 1 Hand', 'Player 2 Hand', 'Winner', 'Player 1 Score', 'Player 2 Score']
+            fieldnames = [
+                'Game', 
+                'Round', 
+                'Player 1 Hand', 
+                'Player 2 Hand', 
+                'Player 1 Card', 
+                'Player 2 Card', 
+                'Winner', 
+                'Player 1 Score', 
+                'Player 2 Score'
+            ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-            # Writes the header only if the file is empty
+            # Write header only if the file is empty
             if csvfile.tell() == 0:
                 writer.writeheader()
 
-            # Adds the game number to each log entry
+            # Add the game number to each log entry and write to the CSV
             for log in self.game_log:
-                log['Game'] = self.game_number 
+                for field in fieldnames:
+                    log.setdefault(field, '')
+                log['Game'] = self.game_number  # Include game number
                 writer.writerow(log)
 
-            # Adds a blank row to separate games
+            # Add a blank row to separate games
             writer.writerow({})
 
         self.game_number += 1
@@ -117,7 +128,7 @@ class DecktionaryBattle:
         self.revealed_cards.append(self.deck.pop())
         print("Revealed Card:", self.revealed_cards[-1])
         
-        return winner
+        return player1_card, player2_card, winner
     
     def choose_card(self, player_hand, player_num):
 
@@ -201,10 +212,10 @@ class DecktionaryBattle:
             for round_num in range(1,9): # Play 8 rounds
                 print(f"\n--- Round {round_num} ---")
                 print(f"Player {leader} is leading this round.")
-                leader = self.lead_round(leader, 2 if leader == 1 else 1)
+                player1_card, player2_card, winner = self.lead_round(leader, 2 if leader == 1 else 1)
         
                 # Logs the round        
-                self.log_event(round_num, self.player1_hand[-1], self.player2_hand[-1], leader)
+                self.log_event(round_num, player1_card, player2_card, winner)
                 
                 # Checks the game-ending criteria after each round
                 if self.check_game_end():
