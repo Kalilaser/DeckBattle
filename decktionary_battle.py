@@ -104,12 +104,28 @@ class DecktionaryBattle:
         - Have fun and strategize to win!       
         """)
     
-    
-    
+    def get_game_length(self):
+        # Prompts user to choose the length of the game.
+        print("Choose game length:")
+        print("short (s) - Play one hand (8 rounds)")
+        print("long (l) - Play the entire deck (Default)")
+        while True:
+            choice = input("Enter your choice (short/s or long/l}: ").lower()
+            if choice in ['short', 's']:
+                return "short"
+            if choice in ['long', 'l']:
+                return "long"
+            else:
+                print("Invalid input. Please type 'short' or 's' fpr a short game, or 'long' or 'l' for a long game.")
+
     def play_game(self):
         print("Welcome to Decktionary Battle!")
         self.print_instructions() # Runs the print_instructions
-        self.deal_cards() # Deals out the initial 9 cards
+        
+        # Choose game length
+        game_length = self.get_game_length()
+        
+        self.deal_cards() # Deals out the initial 8 cards
         # Player 1 leads the first round
         leader = 1
 
@@ -122,7 +138,11 @@ class DecktionaryBattle:
                 # Checks the game-ending criteria after each round
                 if self.check_game_end():
                     return
-        
+            
+            if game_length == "short":
+                print("\n--- Short game completed ---")
+                break
+            
             # Deals new cards
             if len(self.deck) >= 16:
                 print("\n--- Dealing New Cards ---")
