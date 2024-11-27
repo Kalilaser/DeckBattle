@@ -79,9 +79,37 @@ class DecktionaryBattle:
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
+    def print_instructions(self):
+    # This is to print the rules and instructions of the game.
+        print("\n--- Rules of Decktionary Battle ---")
+        print("""
+        1. The game uses a standard deck of playing cards with Kings removed (48 cards).
+        2. Each player starts with 8 cards in their hand.
+        3. Player 1 always leads the first round.
+        4. The player who leads sets the suit for the round (the lead suit).
+        5. The other player must follow the lead suit if possible.
+        6. If the player cannot follow the lead suit, they may play any card.
+        7. The highest-value card in the lead suit wins the round.
+        8. The player who wins the round earns a point and leads the next round.
+        9. After every 8 rounds, if enough cards are left in the deck, each player is dealt 8 new cards.
+        10. The game ends when:
+            - One player scores 16-0 and "shoots the moon," winning with 17 points.
+            - One player scores 9+ points while the other player has at least 1 point.
+            - The deck runs out of cards to deal.
+        11. The player with the most points at the end of the game wins.
+
+        Instructions:
+        - Players will take turns selecting cards from their hand.
+        - Follow the prompts to choose a card to play each round.
+        - Have fun and strategize to win!       
+        """)
+    
+    
+    
     def play_game(self):
         print("Welcome to Decktionary Battle!")
-        self.deal_cards()
+        self.print_instructions() # Runs the print_instructions
+        self.deal_cards() # Deals out the initial 9 cards
         # Player 1 leads the first round
         leader = 1
 
@@ -139,8 +167,6 @@ class DecktionaryBattle:
             print("Player 2 winds the game!")
         else:
             print("The game is a tie!")
-        
-        
         
 
 game = DecktionaryBattle()
