@@ -6,6 +6,7 @@ class DecktionaryBattle:
         self.revealed_cards = []
         self.player1_score = 0
         self.player2_score = 0
+        self.debug = False
 
     def create_deck(self):
         suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
@@ -17,8 +18,9 @@ class DecktionaryBattle:
     def deal_cards(self):
         self.player1_hand = [self.deck.pop() for _ in range(8)]
         self.player2_hand = [self.deck.pop() for _ in range(8)]
-        print("Player 1 Hand:", self.player1_hand)
-        print("Player 2 Hand:", self.player2_hand)
+        if self.debug:
+            print("Player 1 Hand:", self.player1_hand)
+            print("Player 2 Hand:", self.player2_hand)
 
     def lead_round(self, leader, follower):
         if leader == 1:
