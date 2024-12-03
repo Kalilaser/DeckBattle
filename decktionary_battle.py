@@ -10,6 +10,45 @@ class DecktionaryBattle:
         self.debug = False
         self.game_log = []
         self.game_number = 1
+        self.playing_against_bot = False
+        self.bot_difficulty = None
+
+    def choose_opponent(self):
+        # This is to choose to play against another human locally or against the computer
+        print("Choose your opponent:")
+        print("1. Human")
+        print("2. CPU")
+        while True:
+            choice = input("Enter 1 for Human or 2 for CPU: ").strip()
+            if choice == '1':
+                self.player_against_bot = False
+                print("You chose to play against a human!")
+                return
+            elif choice == '2':
+                self.player_against_bot = True
+                self.choose_bot_difficulty()
+                print("You the difficulty:")
+                print(f"{self.bot_difficulty}")
+                return
+            else:
+                print("Invalid choice. Please Try again.")
+
+    def choose_bot_difficulty(self):
+        # Chooses difficulty (Currently only easy or expert)
+
+        print("Choose bot difficulty:")
+        print("1. Easy")
+        print("2. Expert")
+        while True:
+            difficulty = input("Enter 1 for Easy or 2 for Expert").strip()
+            if difficulty == '1':
+                self.bot_difficulty = "easy"
+                return
+            elif difficulty == '2':
+                self.bot_difficulty = "expert"
+                return
+            else:
+                print("Invalid choice. Please try again.")
 
     def create_deck(self):
         suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
