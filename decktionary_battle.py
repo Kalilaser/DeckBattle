@@ -201,9 +201,13 @@ class DecktionaryBattle:
         return player1_card, player2_card, winner
     
     def choose_card(self, player_hand, player_num):
-
-        # This allows players to choose a card from their hand with controls for privacy
-        hidden = True
+        
+        # This allows players or the cpu to choose a card from their hand with controls for privacy
+        if self.playing_against_bot and player_num == 2:
+            return self.bot_choose_card(player_hand)
+        
+        # Human player options
+        hidden = not self.playing_against_bot # Privacy is disabled against bots (Bot cant read the screen)
         while True:
             if hidden:
                 print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
@@ -215,9 +219,9 @@ class DecktionaryBattle:
         
             choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
 
-            if choice in ['show', 's']:
+            if choice in ['show', 's'] and not self.playing_against_bot:
                 hidden = False
-            elif choice in ['hide', 'h']:
+            elif choice in ['hide', 'h'] and not self.playing_against_bot:
                 hidden = True
             elif choice.isdigit() and not hidden:
                 card_idx = int(choice)
@@ -225,6 +229,8 @@ class DecktionaryBattle:
                     return player_hand.pop(card_idx)
                 else:
                     print("Invalid card index. Please try again.")
+            elif choice.isdigit() and self.playing_against_bot:
+                print("Invalid input when playing against a bot.")
             else:
                 print("Invalid input. Please try again.")
 
