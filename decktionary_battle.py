@@ -162,7 +162,7 @@ class DecktionaryBattle:
             player1_card = self.choose_card(self.player1_hand, 1)
         
         # Determines the lead suit
-        lead_suit = player1_card[1] if leader == 1 else player2_card[1]
+        self.lead_suit = player1_card[1] if leader == 1 else player2_card[1]
         print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
         print(f"Lead suit: {lead_suit}")
         
@@ -200,6 +200,10 @@ class DecktionaryBattle:
         
         return player1_card, player2_card, winner
     
+    def get_lead_suit(self):
+        """Returns the lead suit for the current round"""
+        return self.lead_suit
+
     def choose_card(self, player_hand, player_num):
         
         # This allows players or the cpu to choose a card from their hand with controls for privacy
@@ -234,6 +238,26 @@ class DecktionaryBattle:
             else:
                 print("Invalid input. Please try again.")
 
+    def bot_choose_card(self, bot_hand):
+        """Logic for the bot to choose a card base on the difficulty."""
+        print("Bot is choosing a card...")
+        if self.bot_difficulty == "easy":
+            return self.bot_easy_choice(bot_hand)
+        elif self.bot_difficulty == "expert":
+            return self.bot_expert_choice(bot_hand)
+
+    def bot_easy_choice(self, bot_hand):
+        random.shuffle(bot_hand) # This will shuffle the bots hand to add randomness to the pick
+        return bot_hand.pop() # Picks a random card from the hand
+    
+    def bot_expert_choice(self, bot_hand):
+        lead_suit = self.get_lead_suit()
+        # Fitlers cards in hand for the lead suit
+        valid_cards = [card for card in bot_hand if card[1] == lead_suit]
+        if valid_cards:
+            return bot_hand.pop(bot_hand.index(max(valid_cards, key=lambda x: x[0]))) # Plays then highest card in suit
+        else:
+            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x:[0]))) # Dumps lowest card
 
     def print_instructions(self):
     # This is to print the rules and instructions of the game.
@@ -278,6 +302,9 @@ class DecktionaryBattle:
         print("Welcome to Decktionary Battle!")
         self.print_instructions() # Runs the print_instructions
         
+        # Choose opponent type
+        self.choose_opponent()
+
         # Choose game length
         game_length = self.get_game_length()
         
