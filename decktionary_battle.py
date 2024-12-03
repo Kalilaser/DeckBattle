@@ -21,11 +21,11 @@ class DecktionaryBattle:
         while True:
             choice = input("Enter 1 for Human or 2 for CPU: ").strip()
             if choice == '1':
-                self.player_against_bot = False
+                self.playing_against_bot = False
                 print("You chose to play against a human!")
                 return
             elif choice == '2':
-                self.player_against_bot = True
+                self.playing_against_bot = True
                 self.choose_bot_difficulty()
                 print("You the difficulty:")
                 print(f"{self.bot_difficulty}")
@@ -164,22 +164,22 @@ class DecktionaryBattle:
         # Determines the lead suit
         self.lead_suit = player1_card[1] if leader == 1 else player2_card[1]
         print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
-        print(f"Lead suit: {lead_suit}")
+        print(f"Lead suit: {self.lead_suit}")
         
         # Initilization of the winner variable
         winner = None
 
         # Follow Suit Rule Check: Checks to see if anyone did not follow the suit
-        if follower == 2 and player2_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player2_hand):
+        if follower == 2 and player2_card[1] != self.lead_suit and any(card[1] == self.lead_suit for card in self.player2_hand):
             print("Player 2 broke the rules by not following suit!")
             winner = 1 # Player 1 automatically wins
-        elif follower == 1 and player1_card[1] != lead_suit and any(card[1] == lead_suit for card in self.player1_hand):
+        elif follower == 1 and player1_card[1] != self.lead_suit and any(card[1] == self.lead_suit for card in self.player1_hand):
             print("Player 1 broke the rules by not following suit!")
             winner = 2 # Player 2 automatically wins
             
         if winner is None:   
             # Determines the winner normally if no rules have been broken
-            if (player2_card[1] == lead_suit and leader == 1) or (player1_card[1] == lead_suit and leader == 2):
+            if (player2_card[1] == self.lead_suit and leader == 1) or (player1_card[1] == self.lead_suit and leader == 2):
                 winner = 1 if player1_card[0] > player2_card[0] else 2
                 print(f"Both players followed the suit. Winner: Player {winner}")
             else:
@@ -231,8 +231,6 @@ class DecktionaryBattle:
                     return player_hand.pop(card_idx)
                 else:
                     print("Invalid card index. Please try again.")
-            elif choice.isdigit() and self.playing_against_bot:
-                print("Invalid input when playing against a bot.")
             else:
                 print("Invalid input. Please try again.")
 
@@ -255,7 +253,7 @@ class DecktionaryBattle:
         if valid_cards:
             return bot_hand.pop(bot_hand.index(max(valid_cards, key=lambda x: x[0]))) # Plays then highest card in suit
         else:
-            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x:[0]))) # Dumps lowest card
+            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0]))) # Dumps lowest card
 
     def print_instructions(self):
     # This is to print the rules and instructions of the game.
