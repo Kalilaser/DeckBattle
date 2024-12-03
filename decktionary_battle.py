@@ -217,9 +217,7 @@ class DecktionaryBattle:
                 print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
             else:
                 print(f"Player {player_num}'s turn. Your hand:")
-                if not hidden:
-                    print(f"Player {player_num}'s turn. Your hand:")
-                    print(self.render_cards(player_hand))
+                print(self.render_cards(player_hand))
         
             choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
 
