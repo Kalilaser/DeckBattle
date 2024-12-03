@@ -21,10 +21,15 @@ class DecktionaryBattle:
     def log_event(self, round_num, player1_card, player2_card, winner):
         #Logs the details of the round to then be saved to a .csv file
         self.game_log.append({
+            'Game': self.game_number,
             'Round': round_num,
+            'Player 1 Hand': self.player1_hand.copy(),
+            'Player 2 Hand': self.player2_hand.copy(),
             'Player 1 Card': player1_card,
             'Player 2 Card': player2_card,
-            'Winner': f"Player {winner}"
+            'Winner': f"Player {winner}",
+            'Player 1 Score': self.player1_score,
+            'Player 2 Score': self.player2_score
         })
 
     def save_log_to_csv(self, filename="game_log.csv"):
@@ -61,9 +66,12 @@ class DecktionaryBattle:
     def log_final_scores(self):
     # Logs the final scores and game summary.
         self.game_log.append({
+            'Game': self.game_number,
             'Round': 'Final',
-            'Player 1 Hand': self.player1_hand,
-            'Player 2 Hand': self.player2_hand,
+            'Player 1 Hand': self.player1_hand.copy(),
+            'Player 2 Hand': self.player2_hand.copy(),
+            'Player 1 Card': '',
+            'Player 2 Card': '',
             'Winner': 'Game Over',
             'Player 1 Score': self.player1_score,
             'Player 2 Score': self.player2_score
@@ -73,8 +81,10 @@ class DecktionaryBattle:
         self.player1_hand = [self.deck.pop() for _ in range(8)]
         self.player2_hand = [self.deck.pop() for _ in range(8)]
         if self.debug:
-            print("Player 1 Hand:", self.player1_hand)
-            print("Player 2 Hand:", self.player2_hand)
+            print("Player 1 Hand:")
+            print(self.render_cards(self.player1_hand))
+            print("Player 2 Hand:")
+            print(self.render_cards(self.player2_hand))
         
         self.game_log.append({
             'Round': 'Deal',
@@ -83,6 +93,27 @@ class DecktionaryBattle:
             'Winner': 'N/A'
         })
 
+    def render_cards(self, cards: list[tuple[int, str]]) -> str:
+        # This is going to change the cards from (#, *Suit*) to display a text based image of a card to look nicer when playing
+
+        suit_symbols = {'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠'}
+        rank_map = {11: 'J', 12: 'Q', 14: 'A'} # Maps the special cards so it doesnt appear as a number
+        card_lines = [''] * 4 # For storing the actual face of the cards
+
+        for rank, suit in cards:
+            rank_str = rank_map.get(rank, str(rank)) # This changes number to a string
+            suit_symbol = suit_symbols[suit]
+
+            # Add card lines
+            card_lines[0] += "┌─────┐  "
+            card_lines[1] += f"|  {rank_str:<2} |  "  # Rank left-aligned
+            card_lines[2] += f"|  {suit_symbol}  |  "
+            card_lines[3] += f"|  {rank_str:<2} |  "
+        
+        card_lines.append("└─────┘  " * len(cards))
+
+        return "\n".join(card_lines)
+    
     def lead_round(self, leader, follower):
         if leader == 1:
             player1_card = self.choose_card(self.player1_hand, 1)
@@ -139,8 +170,9 @@ class DecktionaryBattle:
                 print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
             else:
                 print(f"Player {player_num}'s turn. Your hand:")
-                for idx, card in enumerate(player_hand):
-                    print(f"{idx}: {card}")
+                if not hidden:
+                    print(f"Player {player_num}'s turn. Your hand:")
+                    print(self.render_cards(player_hand))
         
             choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
 
