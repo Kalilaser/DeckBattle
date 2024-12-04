@@ -40,7 +40,7 @@ class DecktionaryBattle:
         print("1. Easy")
         print("2. Expert")
         while True:
-            difficulty = input("Enter 1 for Easy or 2 for Expert").strip()
+            difficulty = input("Enter 1 for Easy or 2 for Expert: ").strip()
             if difficulty == '1':
                 self.bot_difficulty = "easy"
                 return
