@@ -319,7 +319,9 @@ class DecktionaryBattle:
                 print(f"\n--- Round {round_num} ---")
                 print(f"Player {leader} is leading this round.")
                 player1_card, player2_card, winner = self.lead_round(leader, 2 if leader == 1 else 1)
-        
+
+                leader = winner
+
                 # Logs the round        
                 self.log_event(round_num, player1_card, player2_card, winner)
                 
