@@ -132,8 +132,11 @@ class DecktionaryBattle:
             'Winner': 'N/A'
         })
 
-    def render_cards(self, cards: list[tuple[int, str]]) -> str:
+    def render_cards(self, cards):
         # This is going to change the cards from (#, *Suit*) to display a text based image of a card to look nicer when playing
+
+        if isinstance(cards, tuple):
+            cards = [cards]  # Converts single card tuple to a list
 
         suit_symbols = {'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠'}
         rank_map = {11: 'J', 12: 'Q', 14: 'A'} # Maps the special cards so it doesnt appear as a number
@@ -163,7 +166,10 @@ class DecktionaryBattle:
         
         # Determines the lead suit
         self.lead_suit = player1_card[1] if leader == 1 else player2_card[1]
-        print(f"Player 1 plays: {player1_card}, Player 2 plays: {player2_card}")
+        print("Player 1 plays:")
+        print(self.render_cards(player1_card))
+        print("Player 2 plays:")
+        print(self.render_cards(player2_card))
         print(f"Lead suit: {self.lead_suit}")
         
         # Initilization of the winner variable
@@ -195,8 +201,10 @@ class DecktionaryBattle:
             print("Player 2 wins this round!")
         
         # Reveals the next card from the deck
-        self.revealed_cards.append(self.deck.pop())
-        print("Revealed Card:", self.revealed_cards[-1])
+        revealed_card = self.deck.pop()
+        self.revealed_cards.append(revealed_card)
+        print("Revealed Card:")
+        print(self.render_cards(revealed_card))
         
         return player1_card, player2_card, winner
     
@@ -380,7 +388,7 @@ class DecktionaryBattle:
         if self.player1_score > self.player2_score:
             print("Player 1 wins the game!")
         elif self.player2_score > self.player1_score:
-            print("Player 2 winds the game!")
+            print("Player 2 wins the game!")
         else:
             print("The game is a tie!")
         
