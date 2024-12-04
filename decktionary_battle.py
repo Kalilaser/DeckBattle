@@ -247,9 +247,12 @@ class DecktionaryBattle:
         return bot_hand.pop() # Picks a random card from the hand
     
     def bot_expert_choice(self, bot_hand):
-        lead_suit = self.get_lead_suit()
-        # Fitlers cards in hand for the lead suit
-        valid_cards = [card for card in bot_hand if card[1] == lead_suit]
+        if self.lead_suit is None:
+            # If there is no lead suit, play the lowest card
+            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0])))
+        
+        # Filters cards in hand for the lead suit
+        valid_cards = [card for card in bot_hand if card[1] == self.lead_suit]
         if valid_cards:
             return bot_hand.pop(bot_hand.index(max(valid_cards, key=lambda x: x[0]))) # Plays then highest card in suit
         else:
@@ -305,6 +308,9 @@ class DecktionaryBattle:
         game_length = self.get_game_length()
         
         self.deal_cards() # Deals out the initial 8 cards
+        
+        self.lead_suit = None
+
         # Player 1 leads the first round
         leader = 1
 
