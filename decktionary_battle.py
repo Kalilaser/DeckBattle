@@ -1,17 +1,124 @@
 import random
 import csv
+import time
+import pandas as pd
+import hashlib
+from profiles import ProfileManager
 
 class DecktionaryBattle:
     def __init__(self):
+        self.debug = True        
         self.deck = self.create_deck()
         self.revealed_cards = []
         self.player1_score = 0
         self.player2_score = 0
-        self.debug = False
         self.game_log = []
         self.game_number = 1
         self.playing_against_bot = False
         self.bot_difficulty = None
+        self.profile_manager = ProfileManager()
+        self.player1_profile = None
+        self.player2_profile = None
+        self.card_memory = pd.DataFrame(columns=["rank", "suit", "player"])
+        self.bot_decision_time = 0
+        self.game_mode = 'long' 
+
+    def main_menu(self):
+        while True:
+            print("\n--- Main Menu ---")
+            print("1. Play Game")
+            print("2. Log In")
+            print("3. Leaderboard")
+            print("4. Settings")
+            print("5. Quit")
+            choice = input("Enter your choice: ").strip()
+
+            if choice == '1':
+                self.play_game()
+            elif choice == '2':
+                self.log_in()
+            elif choice == '3':
+                self.show_leaderboard()
+            elif choice == '4':
+                self.settings_menu()
+            elif choice == '5':
+                print("Exiting the game. Goodbye!")
+                self.profile_manager.close()
+                break
+            else:
+                print("Invalid choice. Please try again.")
+    
+    def settings_menu(self):
+        print("\n--- Settings ---")
+        print("1. Change Game Mode (Current: {})".format("short" if self.game_mode == "short" else "long"))
+        print("2. Log Out")
+        print("3. Back to Main Menu")
+        choice = input("Select an option: ").strip()
+        if choice == "1":
+            self.change_game_mode()
+        elif choice == "2":
+            self.logout_current_accounts()
+        elif choice == "3":
+            return
+        else:
+            print("Invalid choice. Please try again.")
+
+    def change_game_mode(self):
+        """Toggle between short and long game modes."""
+        if self.debug:
+            print(f"Debug: Changing game mode from: {self.game_mode}")
+        
+        self.game_mode = "short" if self.game_mode == "long" else "long"
+        print(f"Game mode changed to {'short' if self.game_mode == 'short' else 'long'}.")
+
+    def log_in(self):
+        print("\n--- Log in / Create Profile ---")
+        name = input("Enter your name: ").strip()
+        if name in ["Easy Bot", "Medium Bot", "Expert Bot"]:
+            print(f"Cannot log in as {name}.")
+            return None
+        profile_id = hashlib.sha256(name.encode()).hexdigest()[:10]
+        profile = self.profile_manager.get_profile(profile_id)
+        
+        if profile:
+            print(f"Welcome back, {name}!")
+            print(f"Games Played: {profile[2]}, Wins: {profile[3]}, Losses: {profile[4]}, Win Percentage: {profile[5]:.2f}%")
+            self.player1_profile = profile
+            return profile
+        else:
+            print(f"No profile found for {name}. Would you like to create one?")
+            choice = input("Enter Y to create a new profile or N to cancel: ").strip().lower()
+            if choice == "y":
+                self.profile_manager.create_profile(name)
+                self.player1_profile = self.profile_manager.get_profile(profile_id)
+                return self.player1_profile
+            else:
+                print("Log in canceled.")
+                return None
+
+    def logout_current_accounts(self):
+        """Logs out the currently logged-in Player 1 and Player 2."""
+        self.player1_profile = None
+        self.player2_profile = None
+        print("Both Player 1 and Player 2 have been logged out.")
+
+    def show_leaderboard(self):
+        print("\n---- Leaderboard ---")
+        leaderboard = self.profile_manager.get_leaderboard()
+        print(leaderboard)
+        print("\nStatistics Visualization:")
+        self.visualize_leaderboard(leaderboard)
+
+    def visualize_leaderboard(self, leaderboard):
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        sns.barplot(data=leaderboard, x='name', y='win_percentage', order=leaderboard['name'])
+        plt.title("Win Percentage by Player")
+        plt.ylabel("Win Percentage (%)")
+        plt.xlabel("Player Name")
+        plt.xticks(rotation=45)
+        plt.show()
 
     def choose_opponent(self):
         # This is to choose to play against another human locally or against the computer
@@ -34,18 +141,29 @@ class DecktionaryBattle:
                 print("Invalid choice. Please Try again.")
 
     def choose_bot_difficulty(self):
-        # Chooses difficulty (Currently only easy or expert)
-
+        # Chooses difficulty
         print("Choose bot difficulty:")
         print("1. Easy")
-        print("2. Expert")
+        print("2. Medium")
+        print("3. Expert")
+        bot_profiles = {
+            "1": "Easy Bot",
+            "2": "Medium Bot",
+            "3": "Expert Bot"
+        }
         while True:
-            difficulty = input("Enter 1 for Easy or 2 for Expert: ").strip()
-            if difficulty == '1':
-                self.bot_difficulty = "easy"
-                return
-            elif difficulty == '2':
-                self.bot_difficulty = "expert"
+            difficulty = input("Enter 1 for Easy, 2 for Medium, 3 for Expert: ").strip()
+            if difficulty in bot_profiles:
+                self.bot_difficulty = bot_profiles[difficulty]
+                print(f"Bot difficulty set to {self.bot_difficulty}.")
+                bot_profile_id = hashlib.sha256(self.bot_difficulty.encode()).hexdigest()[:10]
+                
+                # Fetch or create bot profile without login restrictions
+                self.player2_profile = self.profile_manager.force_fetch_bot_profile(bot_profile_id, self.bot_difficulty)
+                if not self.player2_profile:
+                    print(f"Error: Could not initialize profile for {self.bot_difficulty}.")
+                    return
+                self.playing_against_bot = True
                 return
             else:
                 print("Invalid choice. Please try again.")
@@ -55,6 +173,11 @@ class DecktionaryBattle:
         ranks = list(range(2,15)) # 2 to Ace (Ace = 14)
         deck = [(rank, suit) for suit in suits for rank in ranks if rank != 13] # This removes the kings
         random.shuffle(deck)
+        
+        if self.debug:
+            print("\nDebug: Generated Deck (shuffled):")
+            print(deck)
+        
         return deck
     
     def log_event(self, round_num, player1_card, player2_card, winner):
@@ -117,13 +240,22 @@ class DecktionaryBattle:
     })
 
     def deal_cards(self):
+        if self.deck or len(self.deck) < 16:  # Reinitialize the deck if insufficient cards are left
+            self.deck = self.create_deck()  # Recreate the full deck
+            if self.debug:
+                print("Debug: Deck reinitialized.")
+        
+        
         self.player1_hand = [self.deck.pop() for _ in range(8)]
         self.player2_hand = [self.deck.pop() for _ in range(8)]
+        
         if self.debug:
             print("Player 1 Hand:")
             print(self.render_cards(self.player1_hand))
             print("Player 2 Hand:")
             print(self.render_cards(self.player2_hand))
+            print("Debug: Remaining Deck:")
+            print(self.deck)
         
         self.game_log.append({
             'Round': 'Deal',
@@ -157,15 +289,29 @@ class DecktionaryBattle:
         return "\n".join(card_lines)
     
     def lead_round(self, leader, follower):
+        
+        if self.debug:
+            print(f"Debug: Leader: Player {leader}, Follower: Player {follower}")
+            print(f"Debug: Player 1's hand: {self.player1_hand}")
+            print(f"Debug: Player 2's hand: {self.player2_hand}")
+        
         if leader == 1:
             player1_card = self.choose_card(self.player1_hand, 1)
             player2_card = self.choose_card(self.player2_hand, 2)
         else:
             player2_card = self.choose_card(self.player2_hand, 2)
             player1_card = self.choose_card(self.player1_hand, 1)
-        
+
+        if player1_card is None or player2_card is None:
+            if self.debug:    
+                print("Error: A player failed to play a valid card. Ending round.")
+            return None, None, None
+
         # Determines the lead suit
         self.lead_suit = player1_card[1] if leader == 1 else player2_card[1]
+        if self.debug:
+            print(f"Debug: Lead suit determined as {self.lead_suit}")
+        
         print("Player 1 plays:")
         print(self.render_cards(player1_card))
         print("Player 2 plays:")
@@ -213,58 +359,161 @@ class DecktionaryBattle:
         return self.lead_suit
 
     def choose_card(self, player_hand, player_num):
-        
-        # This allows players or the cpu to choose a card from their hand with controls for privacy
-        if self.playing_against_bot and player_num == 2:
-            return self.bot_choose_card(player_hand)
-        
-        # Human player options
-        hidden = not self.playing_against_bot # Privacy is disabled against bots (Bot cant read the screen)
-        while True:
-            if hidden:
-                print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
-            else:
-                print(f"Player {player_num}'s turn. Your hand:")
-                print(self.render_cards(player_hand))
-        
-            choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
-
-            if choice in ['show', 's'] and not self.playing_against_bot:
-                hidden = False
-            elif choice in ['hide', 'h'] and not self.playing_against_bot:
-                hidden = True
-            elif choice.isdigit() and not hidden:
-                card_idx = int(choice)
-                if 0 <= card_idx < len(player_hand):
-                    return player_hand.pop(card_idx)
+        # Single-player mode: Show player's hand without privacy controls
+        if self.playing_against_bot and player_num == 1:
+            print("Your hand:")
+            print(self.render_cards(player_hand))
+            while True:
+                choice = input(f"Choose a card by index (0-{len(player_hand) - 1}): ").strip()
+                if choice.isdigit():
+                    card_idx = int(choice)
+                    if 0 <= card_idx < len(player_hand):
+                        return player_hand.pop(card_idx)
+                    else:
+                        print("Invalid card index. Try again.")
                 else:
-                    print("Invalid card index. Please try again.")
-            else:
-                print("Invalid input. Please try again.")
+                    print("Invalid input. Enter a number.")
+        elif self.playing_against_bot and player_num == 2:
+            return self.bot_choose_card(player_hand)
+        else:
+            print(f"Game Mode: {'Singleplayer' if self.playing_against_bot else 'Multiplayer'}")
+            # Multiplayer mode: Allow privacy controls for human players
+            hidden = True  # Cards start hidden in multiplayer
+            while True:
+                if hidden:
+                    print(f"Player {player_num}'s hand is hidden. Type 'show' (s) to display it.")
+                else:
+                    print(f"Player {player_num}'s turn. Your hand:")
+                    print(self.render_cards(player_hand))
+                choice = input(f"Player {player_num}, choose an action (show/s, hide/h, or pick a card): ").lower()
+                if choice in ['show', 's']:
+                    hidden = False
+                elif choice in ['hide', 'h']:
+                    hidden = True
+                elif choice.isdigit() and not hidden:
+                    card_idx = int(choice)
+                    if 0 <= card_idx < len(player_hand):
+                        return player_hand.pop(card_idx)
+                    else:
+                        print("Invalid card index. Please try again.")
+                else:
+                    print("Invalid input. Please try again.")
 
     def bot_choose_card(self, bot_hand):
-        """Logic for the bot to choose a card base on the difficulty."""
+        """Logic for the bot to choose a card based on the difficulty."""
+        if not bot_hand:
+            if self.debug:
+                print("Error: Bot has no cards to play!")
+            return None  # Return early if the bot has no cards
+        
+        if self.debug:
+            print(f"Debug: Bot's hand before choosing: {bot_hand}")
+
         print("Bot is choosing a card...")
         if self.bot_difficulty == "easy":
             return self.bot_easy_choice(bot_hand)
+        elif self.bot_difficulty == "medium":
+            return self.bot_medium_choice(bot_hand)
         elif self.bot_difficulty == "expert":
             return self.bot_expert_choice(bot_hand)
+        else:
+            chosen_card = bot_hand.pop()
+            if self.debug:
+                print(f"Debug: Bot (fallback) chose card: {chosen_card}")
+            return chosen_card
 
     def bot_easy_choice(self, bot_hand):
+        if not bot_hand:
+            if self.debug:
+                print("Debug: Bot (easy) has no cards in its hand!")
+            return None
+        if self.debug:
+            print(f"Debug: Bot (easy) hand: {bot_hand}")
         random.shuffle(bot_hand) # This will shuffle the bots hand to add randomness to the pick
-        return bot_hand.pop() # Picks a random card from the hand
+        chosen_card = bot_hand.pop() # Picks a random card from the hand
+        if self.debug:
+            print(f"Debug: Bot (easy) chose card: {chosen_card}")
+        return chosen_card    
     
-    def bot_expert_choice(self, bot_hand):
+    def bot_medium_choice(self, bot_hand):
+        if not bot_hand:
+            if self.debug:
+                print("Debug: Bot (medium) has no cards in its hand!")
+            return None
+        
+        if self.debug:
+            print(f"Debug: Bot (medium) hand: {bot_hand}")
+        
         if self.lead_suit is None:
             # If there is no lead suit, play the lowest card
-            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0])))
-        
-        # Filters cards in hand for the lead suit
-        valid_cards = [card for card in bot_hand if card[1] == self.lead_suit]
-        if valid_cards:
-            return bot_hand.pop(bot_hand.index(max(valid_cards, key=lambda x: x[0]))) # Plays then highest card in suit
+            chosen_card = bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0])))
         else:
-            return bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0]))) # Dumps lowest card
+            # Filters cards in hand for the lead suit
+            valid_cards = [card for card in bot_hand if card[1] == self.lead_suit]
+            if valid_cards:
+                chosen_card = bot_hand.pop(bot_hand.index(max(valid_cards, key=lambda x: x[0]))) # Plays then highest card in suit
+            else:
+                chosen_card = bot_hand.pop(bot_hand.index(min(bot_hand, key=lambda x: x[0]))) # Dumps lowest card
+        if self.debug:
+            print(f"Debug: Bot (medium) chose card: {chosen_card}")
+        return chosen_card
+    
+    def bot_expert_choice(self, bot_hand):
+        if not bot_hand:
+            if self.debug:
+                print("Debug: Bot (expert) has no cards in its hand!")
+            return None
+        if self.debug:
+            print(f"Debug: Bot (expert) hand: {bot_hand}")
+            print("Debug: Expert Bot is analyzing the game...")
+
+        # Filter known cards (revealed or played)
+        known_cards = self.card_memory.copy()
+
+        # Add revealed cards to memory
+        for card in self.revealed_cards:
+            if not ((known_cards['rank'] == card[0]) & (known_cards['suit'] == card[1])).any():
+                known_cards = pd.concat([known_cards, pd.DataFrame([{"rank": card[0], "suit": card[1], "player": "revealed"}])], ignore_index=True)
+
+        # Expert Bot logic: play a winning card if possible
+        if self.lead_suit:
+            valid_cards = [card for card in bot_hand if card[1] == self.lead_suit]
+            if valid_cards:
+                # Try to win the round
+                chosen_card = max(valid_cards, key=lambda x: x[0], default=None)
+            else:
+                # Play the lowest card
+                chosen_card = min(bot_hand, key=lambda x: x[0])
+        else:
+            # No lead suit, play the lowest card
+            chosen_card = min(bot_hand, key=lambda x: x[0])
+
+        # Remove chosen card from hand and log it
+        bot_hand.remove(chosen_card)
+        
+        if self.debug:
+            print(f"Debug: Bot (expert) chose card: {chosen_card}")
+        return chosen_card
+
+    def visualize_bot_memory(self):
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+
+        if not self.card_memory.empty:
+            sns.countplot(data=self.card_memory, x="suit", hue="player")
+            plt.title("Expert Bot Memory of Played Cards")
+            plt.xlabel("Suit")
+            plt.ylabel("Count")
+            plt.legend(title="Player")
+            plt.show()
+        else:
+            print("No cards played yet.")
+    
+    def end_game_summary(self):
+        print("\n--- Game Summary ---")
+        print("Expert Bot Memory:")
+        print(self.card_memory)
+        self.visualize_bot_memory()
 
     def print_instructions(self):
     # This is to print the rules and instructions of the game.
@@ -290,39 +539,141 @@ class DecktionaryBattle:
         - Follow the prompts to choose a card to play each round.
         - Have fun and strategize to win!       
         """)
+
+    def is_long_game(self):
+        return self.game_mode == 'long'
     
-    def get_game_length(self):
-        # Prompts user to choose the length of the game.
-        print("Choose game length:")
-        print("short (s) - Play one hand (8 rounds)")
-        print("long (l) - Play the entire deck (Default)")
-        while True:
-            choice = input("Enter your choice (short/s or long/l}: ").lower()
-            if choice in ['short', 's']:
-                return "short"
-            if choice in ['long', 'l']:
-                return "long"
-            else:
-                print("Invalid input. Please type 'short' or 's' fpr a short game, or 'long' or 'l' for a long game.")
+    def is_short_game(self):
+        return self.game_mode == 'short'
 
     def play_game(self):
         print("Welcome to Decktionary Battle!")
-        self.print_instructions() # Runs the print_instructions
+        self.print_instructions()
+        self.reset_game_state()
+        if self.debug:
+            print(f"Debug: Starting game in mode: {self.game_mode}")
         
-        # Choose opponent type
-        self.choose_opponent()
+        print("\n--- Choose Game Mode ---")
+        print("1. Multiplayer")
+        print("2. Singleplayer")
 
-        # Choose game length
-        game_length = self.get_game_length()
-        
-        self.deal_cards() # Deals out the initial 8 cards
-        
-        self.lead_suit = None
+        while True:
+            mode = input("Enter 1 for Multiplayer, 2 for Singleplayer: ").strip()
+            if mode == '1':
+                self.setup_multiplayer_game()
+                return
+            elif mode == "2":
+                self.setup_singleplayer_game()
+                return
+            else:
+                print("Invalid choice. Please try again.")
 
-        # Player 1 leads the first round
-        leader = 1
+    def setup_multiplayer_game(self):
+        print("\n--- Multiplayer Setup ---")
+        if self.player1_profile:
+                print("\nPlayer 1 is already logged in.")
+                print("1. Add Player 2")
+                print("2. Back to Main Menu")
+                choice = input("Enter your choice: ").strip()
+                if choice == "1":
+                    print("Choose Player 2:")
+                    self.player2_profile = self.log_in()
+                    if not self.player2_profile:
+                        print("Failed to log in Player 2. Returning to menu.")
+                        return
+                elif choice == "2":
+                    return
+                else:
+                    print("Invalid choice. Returning to menu.")
+                    return    
+        else:
+            # Logs in both players if player 1 was not logged in from main menu
+            print("Choose Player 1:")
+            self.player1_profile = self.log_in()
+            if not self.player1_profile:
+                print("Failed to log in to player 1. Returning to menu.")
+                return
+            
+            print("Choose Player 2:")
+            self.player2_profile = self.log_in()
+            if not self.player2_profile:
+                print("Failed to log in Player 2. Returning to menu.")
+                return
+        if self.debug:
+            print(f"Debug: Starting game in mode: {self.game_mode}")
+        self.play_multiplayer_game()
+
+    def setup_singleplayer_game(self):
+        print("\n--- Singleplayer Setup ---")
+        if not self.player1_profile:
+            print("Choose Player 1:")
+            self.player1_profile = self.log_in()
+            if not self.player1_profile:
+                print("Playing as guest. Stats will not be recorded")
+                self.player1_profile - {"name": "Guest"}
+        else:
+            print(f"Continuing as {self.player1_profile[1]}")
+        self.choose_bot_difficulty()
+
+        if self.debug:
+            print(f"Debug: Starting game in mode: {self.game_mode}")
+        
+        if self.is_long_game():
+            self.play_long_game()
+        elif self.is_short_game():
+            self.play_short_game()
+    
+    def play_multiplayer_game(self):
+        print("\n--- Multiplayer Game ---")
+        self.deal_cards()
+        self.start_game_loop()
+        self.update_profiles()
+
+    
+    def play_long_game(self):
+        print("\n--- Starting Long Game ---")
+        self.deal_cards()
+        self.start_game_loop()
+        self.print_final_scores()
+        self.log_final_scores()
+        self.save_log_to_csv()
+        self.update_profiles()
+
+    def play_short_game(self):
+        print("\n--- Starting Short Game ---")
+        self.deal_cards()
+        self.start_game_loop()
+        print("--- Game Over ---")
+        self.print_final_scores()
+        self.log_final_scores()
+        self.save_log_to_csv()
+        self.update_profiles()
+
+    def update_profiles(self):
+        if self.player1_profile:
+            self.profile_manager.update_profile_stats(
+                self.player1_profile[0],
+                wins=1 if self.player1_score > self.player2_score else 0,
+                losses=1 if self.player1_score < self.player2_score else 0
+            )
+        
+        if self.player2_profile:
+            self.profile_manager.update_profile_stats(
+                self.player2_profile[0],
+                wins=1 if self.player2_score > self.player1_score else 0,
+                losses=1 if self.player2_score < self.player1_score else 0
+            )
+
+    def start_game_loop(self):
+        
+        self.lead_suit = None # Resets the lead suit
+        leader = 1 # Player 1 leads the first round
 
         while True: # Loops until the game ends
+            if self.debug:
+                print("\nDebug: Current Deck State:")
+                print(self.deck)
+            
             for round_num in range(1,9): # Play 8 rounds
                 print(f"\n--- Round {round_num} ---")
                 print(f"Player {leader} is leading this round.")
@@ -335,28 +686,22 @@ class DecktionaryBattle:
                 
                 # Checks the game-ending criteria after each round
                 if self.check_game_end():
-                    self.log_final_scores()
-                    self.save_log_to_csv()
                     return
-            
-            if game_length == "short":
-                print("\n--- Short game completed ---")
-                self.log_final_scores()
-                self.save_log_to_csv()
-                break
 
-            # Deals new cards
-            if len(self.deck) >= 16:
-                print("\n--- Dealing New Cards ---")
-                self.deal_cards()
-            else:
-                print("\nNot enough cards to deal. Game over.")
-                self.log_final_scores()
-                self.save_log_to_csv()               
-                break
-        
-        self.print_final_scores()
-    
+            # After 8 rounds checks if hands are empty in long games
+            if self.is_long_game():
+                if not self.player1_hand and not self.player2_hand:
+                    if len(self.deck) >= 16:
+                        print("\n--- Dealing New Cards ---")
+                        self.deal_cards()
+                    else:
+                        print("\nNot enough cards to deal. Game over.")
+                        return
+            elif self.is_short_game():
+                if not self.player1_hand and not self.player2_hand:
+                    print("\n--- Hands are empty. Game over. ---")
+                    return
+
     def check_game_end(self):
         # Checks if the game should end based off the set rules
 
@@ -378,6 +723,18 @@ class DecktionaryBattle:
         
         return False # Continues game if moon or guaranteed win criteria has not been met
          
+    def reset_game_state(self):
+        """Resets the game state for a new game."""
+        self.deck = self.create_deck()
+        self.revealed_cards = []
+        self.player1_score = 0
+        self.player2_score = 0
+        self.lead_suit = None
+        self.game_log = []
+        self.game_number += 1  # Increment game number for logging
+        if self.debug:
+            print("Debug: Game state reset.")    
+    
     def print_final_scores(self, message=None):   
         if message:
             print(f"\n{message}")
@@ -391,7 +748,7 @@ class DecktionaryBattle:
             print("Player 2 wins the game!")
         else:
             print("The game is a tie!")
-        
 
-game = DecktionaryBattle()
-game.play_game()
+if __name__ == "__main__":
+    game = DecktionaryBattle()
+    game.main_menu()
